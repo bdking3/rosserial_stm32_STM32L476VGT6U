@@ -102,14 +102,20 @@ class STM32Hardware {
 
         if(twind != tfind){
           uint16_t len = 0;
-		  if(tfind < twind){
-			len = twind - tfind;
-			HAL_UART_Transmit_DMA(huart, &(tbuf[tfind]), len);
-		  }else{
-			len = tbuflen - tfind;
-			HAL_UART_Transmit_DMA(huart, &(tbuf[tfind]), len);
-			HAL_UART_Transmit_DMA(huart, (uint8_t *)&tbuf, twind); // Complied after Eddie casted tbuf to (uint8_t *) this change made program execute properly
-		  }
+          if(tfind < twind){
+            len = twind - tfind;
+            while (HAL_UART_Transmit_DMA(huart, &(tbuf[tfind]), len) == HAL_BUSY) {
+              HAL_Delay(10);
+            }
+          }else{
+            len = tbuflen - tfind;
+            while (HAL_UART_Transmit_DMA(huart, &(tbuf[tfind]), len) == HAL_BUSY) {
+              HAL_Delay(10);
+            }
+            while (HAL_UART_Transmit_DMA(huart, (uint8_t *)&tbuf, twind) == HAL_BUSY) { // Complied after Eddie casted tbuf to (uint8_t *) this change made program execute properly
+              HAL_Delay(10);
+            }
+          }
           tfind = twind;
         }
         mutex = false;
