@@ -115,6 +115,11 @@ static void arrToVar(V& var, const A arr)
     var |= (arr[i] << (8 * i));
 }
 
+inline void HAL_Yield()
+{
+  std::this_thread::sleep_for(10ms);
+}
+
 class STM32Hardware {
   protected:
     const static uint16_t tbuflen = 512;
@@ -137,11 +142,21 @@ class STM32Hardware {
           uint16_t len = 0;
           if(tfind < twind){
             len = twind - tfind;
-            HAL_UART_Transmit_DMA(huart, &(tbuf[tfind]), len); // RETURN VALUE NOT CHECKED!!
+            // If using any kind of RTOS or scheduling, instead of spin-loop you should yield/sleep as appropriate ;-)
+            printf("Try write %d\n", len);
+            while (HAL_UART_Transmit_DMA(huart, &(tbuf[tfind]), len) == HAL_BUSY) {
+              HAL_Yield();
+            }
           }else{
             len = tbuflen - tfind;
-            HAL_UART_Transmit_DMA(huart, &(tbuf[tfind]), len); // RETURN VALUE NOT CHECKED!!
-            HAL_UART_Transmit_DMA(huart, (uint8_t *)&tbuf, twind);  // RETURN VALUE NOT CHECKED!!
+            printf("Try write %d\n", len);
+            while (HAL_UART_Transmit_DMA(huart, &(tbuf[tfind]), len) == HAL_BUSY) {
+              HAL_Yield();
+            }
+            printf("Try write %d\n", twind);
+            while (HAL_UART_Transmit_DMA(huart, (uint8_t *)&tbuf, twind) == HAL_BUSY) {
+              HAL_Yield();
+            }
           }
           tfind = twind;
         }
